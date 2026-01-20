@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+pydantic
+requests
+tenacity
+litellm
+
+[dev]
+pytest
+httpx
+
+[test]
+pytest
+httpx

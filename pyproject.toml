@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-resource-engine"
+version = "0.1.0"
+description = "Agent Resource Engine CLI and API"
+authors = [{name = "Antigravity", email = "antigravity@example.com"}]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic",
+    "requests",
+    "tenacity",
+    "litellm",
+    # Optional dependencies that were seen in imports but might not be strict requirements for core engine
+    # "portkey-ai", # for PortkeyModel
+    # "swerex",     # for Swerex environments
+]
+
+[project.scripts]
+arengine = "cli:main"
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "httpx",  # for TestClient
+]
+dev = [
+    "pytest",
+    "httpx",
+]
+
+[tool.setuptools]
+py-modules = ["cli", "api"]
+packages = ["runners", "environments", "environments.extra", "models", "models.extra", "models.utils", "tests"]
