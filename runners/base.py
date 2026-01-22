@@ -10,18 +10,18 @@ class BaseRunner(ABC):
         self.running_instances: Dict[str, Any] = {}
 
     @abstractmethod
-    def start_instance(self, instance_id: str, environment_config: Dict[str, Any]) -> str:
-        """Starts an instance with the given config. Returns the instance ID."""
+    def start_instance(self, container_name: str, run_id: str, environment_config: Dict[str, Any]) -> str:
+        """Starts an instance with the given config and run ID. Returns the run ID."""
         pass
 
     @abstractmethod
-    def execute_command(self, instance_id: str, cmd: str) -> Dict[str, Any]:
-        """Executes a command in the specified instance."""
+    def execute_command(self, run_id: str, cmd: str) -> Dict[str, Any]:
+        """Executes a command in the specified run ID."""
         pass
 
     @abstractmethod
-    def close_instance(self, instance_id: str) -> None:
-        """Closes the specified instance."""
+    def close_instance(self, run_id: str) -> None:
+        """Closes the specified run ID."""
         pass
 
     def get_available_resources(self) -> Dict[str, Any]:

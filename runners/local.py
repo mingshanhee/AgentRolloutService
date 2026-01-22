@@ -18,7 +18,7 @@ class LocalRunner(BaseRunner):
     def __init__(self, max_resources: Dict[str, Any]):
         super().__init__(max_resources)
 
-    def start_instance(self, instance_id: str, environment_config: Dict[str, Any]) -> str:
+    def start_instance(self, container_name: str, run_id: str, environment_config: Dict[str, Any]) -> str:
         """Starts a local environment instance."""
         # Check resources (simplified: assume 1 unit of 'instances' unless specified)
         needed_resources = environment_config.get("resources", {"instances": 1})
@@ -29,32 +29,33 @@ class LocalRunner(BaseRunner):
             env = get_environment(environment_config)
             # Some environments might start automatically in __init__, others might need explicit start if added
             # But based on docker.py, _start_container is called in __init__.
-            self.running_instances[instance_id] = {
+            self.running_instances[run_id] = {
+                "container_name": container_name,
                 "env": env,
                 "resources": needed_resources
             }
             self._allocate_resources(needed_resources)
-            return instance_id
+            return run_id
         except Exception as e:
-            logger.error(f"Failed to start instance {instance_id}: {e}")
+            logger.error(f"Failed to start instance for container {container_name}, run {run_id}: {e}")
             raise
 
-    def execute_command(self, instance_id: str, cmd: str) -> Dict[str, Any]:
+    def execute_command(self, run_id: str, cmd: str) -> Dict[str, Any]:
         """Executes a command in the local instance."""
-        if instance_id not in self.running_instances:
-            raise KeyError(f"Instance {instance_id} not found.")
+        if run_id not in self.running_instances:
+            raise KeyError(f"Run ID {run_id} not found.")
         
-        env = self.running_instances[instance_id]["env"]
+        env = self.running_instances[run_id]["env"]
         # Assuming env has an execute method as seen in docker.py
         result = env.execute(cmd)
         return result
 
-    def close_instance(self, instance_id: str) -> None:
+    def close_instance(self, run_id: str) -> None:
         """Closes the local instance."""
-        if instance_id not in self.running_instances:
+        if run_id not in self.running_instances:
             return
 
-        instance_data = self.running_instances[instance_id]
+        instance_data = self.running_instances[run_id]
         env = instance_data["env"]
         resources = instance_data["resources"]
         
@@ -64,4 +65,4 @@ class LocalRunner(BaseRunner):
             env.close()
             
         self._release_resources(resources)
-        del self.running_instances[instance_id]
+        del self.running_instances[run_id]
