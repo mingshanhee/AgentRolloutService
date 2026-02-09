@@ -25,6 +25,8 @@ from environments.base import Environment
 
 
 class BubblewrapEnvironmentConfig(BaseModel):
+    run_id: str
+    """Unique identifier for this environment instance."""
     cwd: str = ""
     """Working directory for the sandbox."""
     env: dict[str, str] = {}
@@ -73,7 +75,7 @@ class BubblewrapEnvironment(Environment):
         """
         self.logger = logger or logging.getLogger("agent_rollout_service.environment")
         self.config = config_class(**kwargs)
-        self.working_dir = Path(tempfile.gettempdir()) / f"agent-rollout-service-{uuid.uuid4().hex[:8]}"
+        self.working_dir = Path(tempfile.gettempdir()) / self.config.run_id
         self.working_dir.mkdir(parents=True)
 
     def execute(self, command: str, cwd: str = "", *, timeout: int | None = None) -> dict[str, Any]:

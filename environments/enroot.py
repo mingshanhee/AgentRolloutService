@@ -10,8 +10,10 @@ from environments.base import Environment
 
 
 class EnrootEnvironmentConfig(BaseModel):
-    image: str
+    container_image: str
     """Image to use for the container, e.g., 'ubuntu:22.04'"""
+    run_id: str
+    """Unique identifier for this container instance."""
     cwd: str = "/"
     """Working directory in which to execute commands."""
     env: dict[str, str] = {}
@@ -44,10 +46,10 @@ class EnrootEnvironment(Environment):
     def _setup_container(self):
         """Imports the enroot image and creates the container filesystem."""
         container_dir = os.environ["ENROOT_CACHE_PATH"]
-        container_output_path = os.path.join(container_dir, f"{self.config.image}.sqsh".replace("/", "_"))
+        container_output_path = os.path.join(container_dir, f"{self.config.container_image}.sqsh".replace("/", "_"))
         
         if not os.path.exists(container_output_path):
-            import_cmd = [self.config.executable, "import", "-o", container_output_path, self.config.image]
+            import_cmd = [self.config.executable, "import", "-o", container_output_path, self.config.container_image]
             self.logger.info(f"Importing image with command: {shlex.join(import_cmd)}")
             try:
                 subprocess.run(
@@ -60,11 +62,11 @@ class EnrootEnvironment(Environment):
             except subprocess.CalledProcessError as e:
                 self.logger.error(f"Enroot import failed.\nStderr: {e.stderr}\nStdout: {e.stdout}")
                 raise
-            self.logger.info(f"Successfully imported image '{self.config.image}'")
+            self.logger.info(f"Successfully imported image '{self.config.container_image}'")
         else:
-            self.logger.info(f"Image already present '{self.config.image}'")
+            self.logger.info(f"Image already present '{self.config.container_image}'")
 
-        self.container_name = f"agent-rollout-service-{uuid.uuid4().hex[:8]}"
+        self.container_name = self.config.run_id
         create_cmd = [
             self.config.executable,
             "create",

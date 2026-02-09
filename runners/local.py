@@ -18,26 +18,31 @@ class LocalRunner(BaseRunner):
     def __init__(self, max_resources: Dict[str, Any]):
         super().__init__(max_resources)
 
-    def start_instance(self, container_name: str, run_id: str, environment_config: Dict[str, Any]) -> str:
+    def start_instance(self, request_params: Dict[str, Any]) -> str:
         """Starts a local environment instance."""
-        # Check resources (simplified: assume 1 unit of 'instances' unless specified)
-        needed_resources = environment_config.get("resources", {"instances": 1})
+        # Extract parameters
+        run_id = request_params["run_id"]
+        container_image = request_params["container_image"]
+        needed_resources = request_params.get("resources", {"instances": 1})
+        
+        # Check resources
         if not self._check_resources(needed_resources):
             raise RuntimeError(f"Not enough resources. Available: {self.get_available_resources()}")
 
         try:
-            env = get_environment(environment_config)
+            # Create environment with all request parameters
+            env = get_environment(request_params)
             # Some environments might start automatically in __init__, others might need explicit start if added
             # But based on docker.py, _start_container is called in __init__.
             self.running_instances[run_id] = {
-                "container_name": container_name,
+                "container_image": container_image,
                 "env": env,
                 "resources": needed_resources
             }
             self._allocate_resources(needed_resources)
             return run_id
         except Exception as e:
-            logger.error(f"Failed to start instance for container {container_name}, run {run_id}: {e}")
+            logger.error(f"Failed to start instance for container {container_image}, run {run_id}: {e}")
             raise
 
     def execute_command(self, run_id: str, cmd: str) -> Dict[str, Any]:

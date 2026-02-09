@@ -8,7 +8,7 @@ from environments.base import Environment
 
 
 class SwerexDockerEnvironmentConfig(BaseModel):
-    image: str
+    container_image: str
     cwd: str = "/"
     """Working directory in which to execute commands."""
     timeout: int = 30
@@ -21,7 +21,7 @@ class SwerexDockerEnvironment(Environment):
     def __init__(self, **kwargs):
         """This class executes bash commands in a Docker container using SWE-ReX for sandboxing."""
         self.config = SwerexDockerEnvironmentConfig(**kwargs)
-        self.deployment = DockerDeployment(image=self.config.image, **self.config.deployment_extra_kwargs)
+        self.deployment = DockerDeployment(image=self.config.container_image, **self.config.deployment_extra_kwargs)
         asyncio.run(self.deployment.start())
 
     def execute(self, command: str, cwd: str = "", *, timeout: int | None = None) -> dict[str, Any]:

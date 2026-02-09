@@ -10,7 +10,9 @@ from environments.base import Environment
 
 
 class DockerEnvironmentConfig(BaseModel):
-    image: str
+    container_image: str
+    run_id: str
+    """Unique identifier for this container instance."""
     cwd: str = "/"
     """Working directory in which to execute commands."""
     env: dict[str, str] = {}
@@ -55,7 +57,7 @@ class DockerEnvironment(Environment):
 
     def _start_container(self):
         """Start the Docker container and return the container ID."""
-        container_name = f"agent-rollout-service-{uuid.uuid4().hex[:8]}"
+        container_name = self.config.run_id
         cmd = [
             self.config.executable,
             "run",
@@ -65,7 +67,7 @@ class DockerEnvironment(Environment):
             "-w",
             self.config.cwd,
             *self.config.run_args,
-            self.config.image,
+            self.config.container_image,
             "sleep",
             self.config.container_timeout,
         ]

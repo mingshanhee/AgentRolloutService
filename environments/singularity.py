@@ -14,7 +14,9 @@ from environments.base import Environment
 
 
 class SingularityEnvironmentConfig(BaseModel):
-    image: str
+    container_image: str
+    run_id: str
+    """Unique identifier for this container instance."""
     cwd: str = "/"
     env: dict[str, str] = {}
     """Environment variables to set in the container."""
@@ -41,10 +43,10 @@ class SingularityEnvironment(Environment):
         # Building the sandbox can fail (very rarely), so we retry it
         max_retries = self.config.sandbox_build_retries
         for attempt in range(max_retries):
-            sandbox_dir = Path(tempfile.gettempdir()) / f"agent-rollout-service-{uuid.uuid4().hex[:8]}"
+            sandbox_dir = Path(tempfile.gettempdir()) / self.config.run_id
             try:
                 subprocess.run(
-                    [self.config.executable, "build", "--sandbox", sandbox_dir, self.config.image],
+                    [self.config.executable, "build", "--sandbox", sandbox_dir, self.config.container_image],
                     check=True,
                     capture_output=True,
                 )
@@ -52,7 +54,7 @@ class SingularityEnvironment(Environment):
             except subprocess.CalledProcessError as e:
                 shutil.rmtree(sandbox_dir, ignore_errors=True)
                 self.logger.error(
-                    f"Error building image {self.config.image}, stdout: {e.stdout}, stderr: {e.stderr} (attempt {attempt + 1}/{max_retries})"
+                    f"Error building image {self.config.container_image}, stdout: {e.stdout}, stderr: {e.stderr} (attempt {attempt + 1}/{max_retries})"
                 )
                 if attempt == max_retries - 1:
                     raise

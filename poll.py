@@ -48,7 +48,7 @@ def _print_instances(stats: dict[str, Any]) -> None:
     print("  run_id                               container            created_at")
     for item in instances:
         run_id = str(item.get("run_id", ""))
-        container = str(item.get("container_name", ""))
+        container = str(item.get("container_image", ""))
         created_at = _fmt_ts(item.get("created_at"))
         print(f"  {run_id:36}  {container:18}  {created_at}")
 

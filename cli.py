@@ -10,8 +10,7 @@ def main():
     parser = argparse.ArgumentParser(description="Agent Rollout Service CLI")
     parser.add_argument("--runner", choices=["local", "slurm"], required=True, help="Runner type")
     parser.add_argument("--port", type=int, default=8008, help="Port to run the API on")
-    parser.add_argument("--max-resources", type=str, default='{"instances": 10}', help="JSON string for max resources")
-    parser.add_argument("--environments", type=str, default=None, help="Path to environments JSON file")
+    parser.add_argument("--resources", type=str, default='{"instances": 10}', help="JSON string for available resources")
     
     args = parser.parse_args()
 
@@ -19,30 +18,21 @@ def main():
     logging.basicConfig(level=logging.INFO)
 
     try:
-        max_resources = json.loads(args.max_resources)
+        resources = json.loads(args.resources)
     except json.JSONDecodeError:
-        print("Error: Invalid JSON for --max-resources")
+        print("Error: Invalid JSON for --resources")
         return
 
-    environments = {}
-    if args.environments:
-        try:
-            with open(args.environments, 'r') as f:
-                environments = json.load(f)
-        except Exception as e:
-            print(f"Error loading environments file: {e}")
-            return
-
     if args.runner == "local":
-        runner = LocalRunner(max_resources)
+        runner = LocalRunner(resources)
     elif args.runner == "slurm":
-        runner = SlurmRunner(max_resources)
+        runner = SlurmRunner(resources)
     else:
         # Should be caught by argparse choices
         print("Invalid runner type")
         return
 
-    app = create_app(runner, environments=environments)
+    app = create_app(runner)
     
     # Suppress /stats logging
     from api import EndpointFilter

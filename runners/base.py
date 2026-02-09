@@ -10,8 +10,22 @@ class BaseRunner(ABC):
         self.running_instances: Dict[str, Any] = {}
 
     @abstractmethod
-    def start_instance(self, container_name: str, run_id: str, environment_config: Dict[str, Any]) -> str:
-        """Starts an instance with the given config and run ID. Returns the run ID."""
+    def start_instance(self, request_params: Dict[str, Any]) -> str:
+        """Starts an instance with the given request parameters. Returns the run ID.
+        
+        Expected parameters in request_params:
+        - run_id: str - Unique identifier for the run
+        - container_image: str - Docker image to use (also used as container name)
+        - cwd: str - Working directory
+        - env: Dict[str, str] - Environment variables
+        - forward_env: List[str] - Environment variables to forward
+        - timeout: int - Timeout in seconds
+        - executable: Optional[str] - Executable to run
+        - run_args: List[str] - Docker run arguments
+        - container_timeout: str - Container timeout
+        - pull_timeout: int - Image pull timeout
+        - resources: Dict[str, Any] - Resource requirements
+        """
         pass
 
     @abstractmethod

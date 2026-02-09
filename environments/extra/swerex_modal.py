@@ -8,7 +8,7 @@ from environments.base import Environment
 
 
 class SwerexModalEnvironmentConfig(BaseModel):
-    image: str
+    container_image: str
     """Image to use for the deployment. Can be:
     - Dockerhub image name (e.g. `python:3.11-slim`)
     - ECR image name (e.g. `123456789012.dkr.ecr.us-east-1.amazonaws.com/my-image:tag`)
@@ -49,7 +49,7 @@ class SwerexModalEnvironment(Environment):
         """
         self.config = SwerexModalEnvironmentConfig(**kwargs)
         self.deployment = ModalDeployment(
-            image=self.config.image,
+            image=self.config.container_image,
             startup_timeout=self.config.startup_timeout,
             runtime_timeout=self.config.runtime_timeout,
             deployment_timeout=self.config.deployment_timeout,

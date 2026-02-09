@@ -11,15 +11,19 @@ class SlurmRunner(BaseRunner):
     def __init__(self, max_resources: Dict[str, Any]):
         super().__init__(max_resources)
 
-    def start_instance(self, container_name: str, run_id: str, environment_config: Dict[str, Any]) -> str:
+    def start_instance(self, request_params: Dict[str, Any]) -> str:
         """Starts a Slurm job instance."""
-        # Check resources (simplified: assume 1 unit of 'jobs' unless specified)
-        needed_resources = environment_config.get("resources", {"instances": 1})
+        # Extract parameters
+        run_id = request_params["run_id"]
+        container_image = request_params["container_image"]
+        needed_resources = request_params.get("resources", {"instances": 1})
+        
+        # Check resources
         if not self._check_resources(needed_resources):
             raise RuntimeError(f"Not enough resources. Available: {self.get_available_resources()}")
 
         # Extract sbatch options from config
-        sbatch_args = environment_config.get("sbatch_args", [])
+        sbatch_args = request_params.get("sbatch_args", [])
         
         # We start a sleeper job so we can execute commands in it
         # Construct sbatch command
@@ -42,15 +46,15 @@ class SlurmRunner(BaseRunner):
                 job_id = job_id.split(";")[0]
 
             self.running_instances[run_id] = {
-                "container_name": container_name,
+                "container_image": container_image,
                 "job_id": job_id,
                 "resources": needed_resources
             }
             self._allocate_resources(needed_resources)
-            logger.info(f"Started Slurm job {job_id} for container {container_name}, run {run_id}")
+            logger.info(f"Started Slurm job {job_id} for container {container_image}, run {run_id}")
             return run_id
         except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to submit Slurm job for container {container_name}, run {run_id}: {e.stderr}")
+            logger.error(f"Failed to submit Slurm job for container {container_image}, run {run_id}: {e.stderr}")
             raise
 
     def execute_command(self, run_id: str, cmd: str) -> Dict[str, Any]:

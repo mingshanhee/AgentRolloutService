@@ -46,12 +46,11 @@ arservice --runner <local|slurm> [OPTIONS]
 | `--runner` | **Required**. Type of runner to use: `local` or `slurm`. | - |
 | `--port` | Port to run the HTTP API on. | `8008` |
 | `--max-resources` | JSON string defining maximum available resources (e.g., `{"instances": 10, "cpus": 40}`). Only keys defined here are strictly enforced; others are allowed but ignored for accounting. | `{"instances": 10}` |
-| `--environments` | Path to a JSON file containing pre-defined environment configurations. | `None` |
 
 ### Resource Management
 
 The service performs admission control based on the resources defined in `--max-resources`. 
-- **Enforced Resources**: If a request (via `environment_config.resources`) asks for a resource key that is present in the server's `--max-resources`, the service ensures there is enough remaining capacity.
+- **Enforced Resources**: If a request (via `resources` field) asks for a resource key that is present in the server's `--max-resources`, the service ensures there is enough remaining capacity.
 - **Untracked Resources**: Resource types (like `cpus`, `memory`, or `gpus`) can be included in request payloads even if the server is not configured to track them. These will be passed through to the underlying environment (e.g., Docker) but will not be used for admission control or resource accounting in the service itself.
 
 Example starting with CPU and memory tracking:
@@ -85,11 +84,25 @@ Starts a new instance of an environment.
 **Request Body:**
 ```json
 {
-  "container_name": "string",
   "run_id": "string",
-  "environment_config": {}
+  "container_image": "string",
+  "container_type": "string",
+  "cwd": "string (optional, default: /)",
+  "env": {},
+  "forward_env": [],
+  "timeout": "int (optional, default: 300)",
+  "executable": "string (optional)",
+  "run_args": ["array (optional, default: ['--rm'])"],
+  "container_timeout": "string (optional, default: 2h)",
+  "pull_timeout": "int (optional, default: 120)",
+  "resources": {"instances": 1}
 }
 ```
+
+**Required Fields:**
+- `run_id`: Unique identifier for this instance (also used as the container name)
+- `container_image`: Container image to use
+- `container_type`: Type of container environment (e.g., "docker", "enroot", "singularity")
 
 <details>
 <summary><b>Sample Request (curl)</b></summary>
@@ -98,12 +111,9 @@ Starts a new instance of an environment.
 curl -X POST http://localhost:8008/start_instance \
   -H "Content-Type: application/json" \
   -d '{
-    "container_name": "xingyaoww/sweb.eval.x86_64.python_s_mypy-5617:latest",
     "run_id": "eval-run-001",
-    "environment_config": {
-      "container_type": "docker",
-      "image": "xingyaoww/sweb.eval.x86_64.python_s_mypy-5617:latest"
-    }
+    "container_image": "xingyaoww/sweb.eval.x86_64.python_s_mypy-5617:latest",
+    "container_type": "docker"
   }'
 ```
 </details>

@@ -12,9 +12,18 @@ class EndpointFilter(logging.Filter):
 
 
 class StartInstanceRequest(BaseModel):
-    container_name: str
     run_id: str
-    environment_config: Dict[str, Any] = {}
+    container_image: str
+    container_type: str
+    cwd: str = "/"
+    env: Dict[str, str] = {}
+    forward_env: List[str] = []
+    timeout: int = 300
+    executable: Optional[str] = None
+    run_args: List[str] = ["--rm"]
+    container_timeout: str = "2h"
+    pull_timeout: int = 120
+    resources: Dict[str, Any] = {"instances": 1}
 
 class ExecuteCommandRequest(BaseModel):
     run_id: str
@@ -24,31 +33,17 @@ class CloseInstanceRequest(BaseModel):
     run_id: str
 
 
-def create_app(runner: BaseRunner, environments: Dict[str, Dict[str, Any]] = {}) -> FastAPI:
+def create_app(runner: BaseRunner) -> FastAPI:
     app = FastAPI()
     started_at = time.time()
 
     @app.post("/start_instance")
     def start_instance(request: StartInstanceRequest):
         try:
-            # Check if container_name maps to a pre-defined environment
-            if request.container_name in environments:
-                env_config = environments[request.container_name]
-                # If the config is just a string, assume it's a docker image name
-                if isinstance(env_config, str):
-                    env_config = {"container_type": "docker", "image": env_config}
-                
-                # If the request provides overrides or additional config, merge them
-                if request.environment_config:
-                     env_config = {**env_config, **request.environment_config}
-            else:
-                # If not in environments, rely fully on request payload (backward compatibility or flexible usage)
-                env_config = request.environment_config
+            # Convert request to dictionary
+            request_params = request.model_dump()
             
-            if not env_config:
-                 raise HTTPException(status_code=400, detail="Environment configuration not found for instance")
-
-            instance_id = runner.start_instance(request.container_name, request.run_id, env_config)
+            instance_id = runner.start_instance(request_params)
             return {"status": "success", "instance_id": instance_id}
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
@@ -96,15 +91,15 @@ def create_app(runner: BaseRunner, environments: Dict[str, Dict[str, Any]] = {})
             if run_id and run_id not in rid:
                 continue
             if container_name:
-                instance_container = instance_data.get("container_name", "")
+                instance_container = instance_data.get("container_image", "")
                 if container_name not in instance_container:
                     continue
             
-            container = instance_data.get("container_name", "unknown")
+            container = instance_data.get("container_image", "unknown")
             container_counts[container] = container_counts.get(container, 0) + 1
             instances.append({
                 "run_id": rid,
-                "container_name": container,
+                "container_image": container,
                 "created_at": instance_data.get("created_at"),
                 "environment_config": instance_data.get("environment_config", {}),
             })
